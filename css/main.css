@@ -1,0 +1,54 @@
+/* Estilos de la página contenedora. Todo el juego se dibuja dentro del <canvas>. */
+
+html,
+body {
+  margin: 0;
+  height: 100%;
+  background: #0d0b12;
+  overflow: hidden;
+  overscroll-behavior: none; /* evita "tirar para refrescar" en Android */
+}
+
+body {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #f4ecd8;
+  font-family: "Trebuchet MS", "Segoe UI", system-ui, sans-serif;
+}
+
+#game {
+  display: block;
+  outline: none;
+  touch-action: none; /* los gestos los gestiona el juego, no el navegador */
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#fatal {
+  position: fixed;
+  inset: 0;
+  margin: 0;
+  padding: 24px;
+  background: #1b0f14;
+  color: #ffd9d9;
+  white-space: pre-wrap;
+  font: 16px/1.5 ui-monospace, Consolas, monospace;
+  z-index: 10;
+}
+
+#fatal[hidden] {
+  display: none;
+}
+
+noscript {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  text-align: center;
+}

@@ -1,0 +1,16 @@
+# Dependencias y compilados
+node_modules/
+dist/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Registros y temporales
+*.log
+*.tmp
