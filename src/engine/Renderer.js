@@ -1,44 +1,86 @@
+import { computeLayout, sameLayout } from './layout.js';
+
 /**
- * Gestiona el canvas: resolución lógica fija, escalado a la ventana
- * (con bandas si la proporción no coincide) y conversión de coordenadas.
+ * Gestiona el canvas: resolución lógica adaptable, escalado uniforme a la ventana
+ * (con bandas si la proporción queda fuera de los límites), áreas seguras y
+ * conversión de coordenadas.
  *
- * El juego dibuja siempre en coordenadas lógicas (p. ej. 1280×720).
+ * El juego dibuja siempre en coordenadas LÓGICAS. La altura lógica es fija (720); el ancho
+ * (`renderer.width`) varía con la proporción de la pantalla: léelo siempre de aquí.
+ * El cálculo del layout vive en layout.js (función pura, con pruebas).
  */
 export class Renderer {
-  constructor(canvas, { width, height, maxPixelRatio, clearColor }) {
+  constructor(canvas, config) {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d', { alpha: false });
-    this.width = width;
-    this.height = height;
-    this.maxPixelRatio = maxPixelRatio;
-    this.clearColor = clearColor;
-    this.pixelScale = 1; // píxeles reales del canvas por unidad lógica
+    this.config = config;
+    this.clearColor = config.clearColor;
+
+    this.baseWidth = config.width; // resolución de referencia (16:9)
+    this.width = config.width; // ancho lógico ACTUAL
+    this.height = config.height; // alto lógico (fijo)
+    this.cssScale = 1; // píxeles CSS por unidad lógica
+    this.pixelScaleX = 1; // píxeles reales del canvas por unidad lógica
+    this.pixelScaleY = 1;
+    this.safe = { top: 0, right: 0, bottom: 0, left: 0 }; // áreas seguras en unidades lógicas
+    this.safeRect = { x: 0, y: 0, w: this.width, h: this.height };
+    this.layout = null;
   }
 
-  /** Ajusta el tamaño del canvas al espacio disponible conservando la proporción. */
-  resize(availW = globalThis.innerWidth ?? this.width, availH = globalThis.innerHeight ?? this.height) {
-    const aspect = this.width / this.height;
-    let cssW = availW;
-    let cssH = cssW / aspect;
-    if (cssH > availH) {
-      cssH = availH;
-      cssW = cssH * aspect;
-    }
-    cssW = Math.max(1, Math.floor(cssW));
-    cssH = Math.max(1, Math.floor(cssH));
+  /** Compatibilidad: factor horizontal de píxeles reales por unidad lógica. */
+  get pixelScale() {
+    return this.pixelScaleX;
+  }
 
-    const dpr = Math.min(globalThis.devicePixelRatio || 1, this.maxPixelRatio);
-    this.canvas.style.width = `${cssW}px`;
-    this.canvas.style.height = `${cssH}px`;
-    this.canvas.width = Math.round(cssW * dpr);
-    this.canvas.height = Math.round(cssH * dpr);
-    this.pixelScale = this.canvas.width / this.width;
+  /** Convierte píxeles CSS (lo que el usuario percibe y toca) a unidades lógicas. */
+  cssToLogical(px) {
+    return px / this.cssScale;
+  }
+
+  /**
+   * Ajusta el canvas al espacio disponible. Si el resultado es idéntico al actual NO toca
+   * el DOM (cambiar el tamaño de un canvas lo borra y es costoso).
+   * @returns {boolean} true si la presentación cambió
+   */
+  resize(
+    availW = globalThis.innerWidth ?? this.config.width,
+    availH = globalThis.innerHeight ?? this.config.height,
+    { dpr = globalThis.devicePixelRatio || 1, insets } = {},
+  ) {
+    const next = computeLayout({ availW, availH, dpr, insets, config: this.config });
+    const prev = this.layout;
+    if (sameLayout(prev, next)) return false;
+    this.layout = next;
+
+    const { canvas } = this;
+    if (!prev || prev.cssW !== next.cssW || prev.cssH !== next.cssH) {
+      canvas.style.width = `${next.cssW}px`;
+      canvas.style.height = `${next.cssH}px`;
+    }
+    if (!prev || prev.bufW !== next.bufW || prev.bufH !== next.bufH) {
+      canvas.width = next.bufW;
+      canvas.height = next.bufH;
+    }
+
+    this.width = next.width;
+    this.height = next.height;
+    this.cssScale = next.cssScale;
+    this.pixelScaleX = next.pixelScaleX;
+    this.pixelScaleY = next.pixelScaleY;
+    this.safe = next.safe;
+    this.safeRect = {
+      x: next.safe.left,
+      y: next.safe.top,
+      w: Math.max(1, next.width - next.safe.left - next.safe.right),
+      h: Math.max(1, next.height - next.safe.top - next.safe.bottom),
+    };
+    return true;
   }
 
   /** Prepara el fotograma: transformación lógica + limpieza. */
   begin() {
     const { ctx } = this;
-    ctx.setTransform(this.pixelScale, 0, 0, this.pixelScale, 0, 0);
+    ctx.setTransform(this.pixelScaleX, 0, 0, this.pixelScaleY, 0, 0);
     ctx.globalAlpha = 1;
     ctx.fillStyle = this.clearColor;
     ctx.fillRect(0, 0, this.width, this.height);

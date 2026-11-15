@@ -7,7 +7,7 @@ import { CONFIG } from '../config/config.js';
 import { THEME } from '../config/theme.js';
 import { TouchControls } from '../ui/TouchControls.js';
 import { drawDialogBox } from '../ui/DialogBox.js';
-import { drawText, roundRectPath } from '../ui/draw.js';
+import { drawText, legibleSize, roundRectPath } from '../ui/draw.js';
 
 /**
  * Escena de juego: un nivel con jugador, cámara, interacción y diálogos.
@@ -43,6 +43,12 @@ export class LevelScene extends Scene {
     this.playtimeMs = data.playtimeMs;
 
     game.events.emit('level:loaded', { id: this.level.id });
+  }
+
+  /** Cambió la proporción/orientación/áreas seguras: la cámara y los controles se recalculan. */
+  onResize(w, h) {
+    this.camera.resize(w, h);
+    this.touch.layout();
   }
 
   /** Lanza un diálogo definido en el nivel actual (lo usan las entidades al interactuar). */
@@ -97,8 +103,8 @@ export class LevelScene extends Scene {
   }
 
   render(ctx) {
-    const { width: W, height: H } = this.game.renderer;
-    const { input } = this.game;
+    const { renderer, input } = this.game;
+    const { width: W, height: H, safe } = renderer;
 
     ctx.save();
     this.camera.apply(ctx);
@@ -110,16 +116,26 @@ export class LevelScene extends Scene {
     if (focus && !this.dialogue.active) this._renderPrompt(ctx, focus, input.usedTouch);
 
     if (this.level.def.hint && !input.usedTouch) {
-      drawText(ctx, this.level.def.hint, 20, 18, {
-        font: `15px ${THEME.fonts.ui}`,
+      drawText(ctx, this.level.def.hint, safe.left + 20, safe.top + 18, {
+        font: `${legibleSize(renderer, 15)}px ${THEME.fonts.ui}`,
         color: THEME.colors.textDim,
         baseline: 'top',
         shadow: THEME.colors.shadow,
       });
     }
 
-    drawDialogBox(ctx, this.dialogue, W, H);
-    this.touch.render(ctx, !this.dialogue.active);
+    drawDialogBox(ctx, this.dialogue, W, H, safe);
+
+    // Los controles táctiles se atenúan si quedan encima del jugador o de algo con lo que se
+    // puede interactuar, para no ocultar lo importante.
+    const z = this.camera.zoom;
+    const avoid = [];
+    for (const e of this.level.entities) {
+      if (e !== this.player && !e.interactable) continue;
+      const p = this.camera.worldToScreen(e.x, e.y);
+      avoid.push({ x: p.x, y: p.y, w: e.w * z, h: e.h * z });
+    }
+    this.touch.render(ctx, !this.dialogue.active, avoid);
   }
 
   _renderPrompt(ctx, entity, touch) {

@@ -3,6 +3,11 @@ import { THEME } from '../../config/theme.js';
 import { Menu } from '../Menu.js';
 import { drawText, roundRectPath, wrapText } from '../draw.js';
 
+// Geometría del panel (unidades lógicas, relativa al centro vertical de la pantalla).
+const PANEL_H = 370;
+const PANEL_TOP = -205; // desde el centro
+const MENU_TOP = -10; // desde el centro
+
 /**
  * Diálogo de confirmación (se apila sobre otra escena).
  * Parámetros: { message, yesLabel, noLabel, onYes, onNo }
@@ -15,7 +20,6 @@ export class ConfirmScene extends Scene {
 
   enter({ message = '¿Seguro?', yesLabel = 'Sí', noLabel = 'No', onYes = null, onNo = null } = {}) {
     const { game } = this;
-    const { width: W, height: H } = game.renderer;
     this.message = message;
     this.onNo = onNo;
 
@@ -26,11 +30,11 @@ export class ConfirmScene extends Scene {
 
     this.menu = new Menu({
       audio: game.audio,
-      x: W / 2,
-      y: H / 2 + 20,
+      x: () => game.renderer.width / 2,
+      y: game.renderer.height / 2 + MENU_TOP,
       width: 380,
-      itemHeight: 54,
-      gap: 12,
+      itemHeight: 64,
+      gap: 14,
       fontSize: 24,
       items: [
         { label: noLabel, onSelect: answer(onNo) },
@@ -49,13 +53,13 @@ export class ConfirmScene extends Scene {
   }
 
   render(ctx) {
-    const { width: W, height: H } = this.game.renderer;
+    const { width: W, height: H, safeRect } = this.game.renderer;
     ctx.fillStyle = THEME.colors.overlay;
     ctx.fillRect(0, 0, W, H);
 
-    const pw = 700;
-    const ph = 330;
-    roundRectPath(ctx, W / 2 - pw / 2, H / 2 - ph / 2 - 40, pw, ph, 24);
+    const pw = Math.min(700, safeRect.w - 48);
+    const top = H / 2 + PANEL_TOP;
+    roundRectPath(ctx, W / 2 - pw / 2, top, pw, PANEL_H, 24);
     ctx.fillStyle = 'rgba(30, 25, 40, 0.97)';
     ctx.fill();
     ctx.strokeStyle = THEME.colors.border;
@@ -64,7 +68,7 @@ export class ConfirmScene extends Scene {
 
     ctx.font = `24px ${THEME.fonts.ui}`;
     wrapText(ctx, this.message, pw - 80).forEach((line, i) => {
-      drawText(ctx, line, W / 2, H / 2 - ph / 2 + 10 + i * 34, {
+      drawText(ctx, line, W / 2, top + 40 + i * 34, {
         color: THEME.colors.text,
         align: 'center',
         baseline: 'top',

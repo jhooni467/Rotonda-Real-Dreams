@@ -1,16 +1,22 @@
 import { THEME } from '../config/theme.js';
 import { roundRectPath } from './draw.js';
 
+/** `x` y `width` pueden ser un número o una función (se evalúa en cada uso → se adaptan al cambiar la pantalla). */
+const val = (v) => (typeof v === 'function' ? v() : v);
+
 /**
  * Menú vertical dibujado en canvas, con teclado, ratón y táctil.
  *
- *   const menu = new Menu({ audio, x: 640, y: 360, width: 420, items: [
+ *   const menu = new Menu({ audio, x: () => game.renderer.width / 2, y: 360, width: 420, items: [
  *     { label: 'Nueva partida', onSelect: () => ... },
  *     { label: 'Continuar', enabled: false },
  *   ]});
  *   menu.update(input);  menu.render(ctx);
  *
  * `x` es el CENTRO horizontal; `y` el borde superior de la primera opción.
+ * Para que el menú siga centrado cuando cambia la proporción de la pantalla, pasa `x` (y `width`)
+ * como función. La zona táctil de cada opción llena también el hueco entre opciones, para que
+ * sea más cómoda de tocar sin cambiar el aspecto.
  * Estilo PROVISIONAL (ver config/theme.js).
  */
 export class Menu {
@@ -27,18 +33,20 @@ export class Menu {
   }
 
   rect(i) {
+    const w = val(this.width);
     return {
-      x: this.x - this.width / 2,
+      x: val(this.x) - w / 2,
       y: this.y + i * (this.itemHeight + this.gap),
-      w: this.width,
+      w,
       h: this.itemHeight,
     };
   }
 
   _hit(px, py) {
+    const pad = this.gap / 2;
     for (let i = 0; i < this.items.length; i++) {
       const r = this.rect(i);
-      if (px >= r.x && px <= r.x + r.w && py >= r.y && py <= r.y + r.h) return i;
+      if (px >= r.x && px <= r.x + r.w && py >= r.y - pad && py <= r.y + r.h + pad) return i;
     }
     return -1;
   }
@@ -87,9 +95,9 @@ export class Menu {
   }
 
   render(ctx) {
-    ctx.font = `${this.fontSize}px ${THEME.fonts.ui}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
+    const cx = val(this.x);
 
     this.items.forEach((item, i) => {
       const r = this.rect(i);
@@ -103,8 +111,18 @@ export class Menu {
       ctx.strokeStyle = selected ? THEME.colors.accent : THEME.colors.border;
       ctx.stroke();
 
+      // Si el texto no cabe en la opción (pantallas estrechas), se reduce la fuente en vez de cortarlo.
+      let size = this.fontSize;
+      ctx.font = `${size}px ${THEME.fonts.ui}`;
+      const maxW = r.w - 32;
+      const textW = ctx.measureText(item.label).width;
+      if (textW > maxW) {
+        size = Math.max(12, Math.floor((size * maxW) / textW));
+        ctx.font = `${size}px ${THEME.fonts.ui}`;
+      }
+
       ctx.fillStyle = enabled ? (selected ? THEME.colors.text : THEME.colors.textDim) : THEME.colors.disabled;
-      ctx.fillText(item.label, this.x, r.y + r.h / 2 + 1);
+      ctx.fillText(item.label, cx, r.y + r.h / 2 + 1);
     });
   }
 }

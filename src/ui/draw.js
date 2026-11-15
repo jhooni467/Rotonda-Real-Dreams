@@ -1,3 +1,5 @@
+import { CONFIG } from '../config/config.js';
+
 /** Utilidades de dibujo 2D compartidas por la interfaz. */
 
 /** Traza (sin rellenar) un rectángulo redondeado; compatible con navegadores sin ctx.roundRect. */
@@ -14,6 +16,15 @@ export function roundRectPath(ctx, x, y, w, h, r = 12) {
   ctx.arcTo(x, y + h, x, y, rr);
   ctx.arcTo(x, y, x + w, y, rr);
   ctx.closePath();
+}
+
+/**
+ * Tamaño de fuente (unidades lógicas) que garantiza legibilidad: en pantallas pequeñas el juego se
+ * muestra reducido y un texto de 14 px lógicos serían ~8 px reales. Devuelve el mayor entre el
+ * tamaño pedido y el mínimo legible (CONFIG.ui.minTextCss píxeles CSS) en este dispositivo.
+ */
+export function legibleSize(renderer, px, minCss = CONFIG.ui.minTextCss) {
+  return Math.max(px, Math.ceil(minCss / renderer.cssScale));
 }
 
 /** Divide un texto en líneas que caben en maxWidth con la fuente actual del contexto. */

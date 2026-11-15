@@ -33,6 +33,17 @@ export class Camera {
     this._clamp();
   }
 
+  /**
+   * Adapta la cámara a un nuevo tamaño de vista (cambio de proporción o de orientación).
+   * No altera la posición ni el zoom: solo cambia cuánto escenario cabe en pantalla.
+   */
+  resize(viewW, viewH) {
+    if (viewW === this.viewW && viewH === this.viewH) return;
+    this.viewW = viewW;
+    this.viewH = viewH;
+    this._clamp();
+  }
+
   setZoom(z, immediate = false) {
     this.targetZoom = clamp(z, this.minZoom, this.maxZoom);
     if (immediate) this.zoom = this.targetZoom;

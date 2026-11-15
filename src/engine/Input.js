@@ -111,6 +111,11 @@ export class Input {
   /** Suelta todo (p. ej. al perder el foco de la ventana) para evitar teclas "pegadas". */
   releaseAll() {
     this._down.clear();
+    this.releasePointers();
+  }
+
+  /** Suelta solo los punteros: sus coordenadas dejan de ser válidas si cambia el layout. */
+  releasePointers() {
     this.pointers.clear();
   }
 

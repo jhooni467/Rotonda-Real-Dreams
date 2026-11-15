@@ -1,6 +1,6 @@
 {
   "name": "rotonda",
-  "version": "0.0.1",
+  "version": "0.1.0",
   "description": "ROTONDA — aventura 2D de exploración, acertijos y surrealismo (HTML + CSS + JavaScript + Canvas 2D).",
   "private": true,
   "type": "module",

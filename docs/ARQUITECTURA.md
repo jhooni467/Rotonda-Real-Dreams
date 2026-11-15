@@ -5,7 +5,8 @@ Objetivo del diseño: **que añadir un nivel, un personaje, una animación o un 
 ## Visión general
 
 ```
-index.html ─▶ src/main.js ─▶ Game ──┬─ Renderer      canvas, escalado, coordenadas
+index.html ─▶ src/main.js ─▶ Game ──┬─ Renderer      canvas, layout adaptable, áreas seguras, coordenadas
+                                    ├─ Orientation   vertical/horizontal, bloqueo, pantalla completa
                                     ├─ Input         teclado · ratón · táctil → ACCIONES
                                     ├─ SceneManager  pila de escenas + Transition
                                     ├─ LevelManager  registro de niveles (datos)
@@ -27,9 +28,25 @@ rAF → acumula tiempo → N × Game.update(1/60) → Game.render()
                          └─ SceneManager.update → escena superior · Input.endFrame()
 ```
 
+### Adaptación a la pantalla y orientación
+
+```
+evento (resize · giro · pantalla completa) ─▶ marca el layout "pendiente"
+inicio del fotograma ─▶ Game._applyLayout():
+     ventana en vertical?  ─ sí ─▶ no hace nada (el layout horizontal se conserva)
+     Renderer.resize(): computeLayout() ─▶ ¿igual que el actual? ─ sí ─▶ no toca el DOM
+                                            └ no ─▶ canvas + safe + scenes.resize() + evento 'display:resized'
+```
+
+- **Vertical:** `Orientation.blocked` → `Game.update/render` no hacen nada, se sueltan las entradas y se suspende el audio. La pantalla de giro es HTML/CSS (`index.html`, `css/main.css`), con el mismo criterio que usa el motor.
+- **Bloqueo y pantalla completa:** `Orientation.tryLock()` / `toggleFullscreen()`. El bloqueo es un extra opcional; ver las limitaciones en [DISPOSITIVOS.md](DISPOSITIVOS.md).
+- **Controles táctiles:** `TouchControls.layout()` coloca todo dentro del área segura con tamaños definidos en píxeles reales (`config.ui.touch`).
+
 ### Coordenadas
 
-- **Resolución lógica** fija: 1280 × 720 (`config.render`). El canvas se escala a la ventana con bandas si la proporción no coincide, y se limita la densidad de píxeles a 2× para cuidar el rendimiento en móviles.
+- **Resolución lógica** de referencia 1280 × 720 (`config.render`) con **altura fija (720)** y **ancho variable** (960–1728) según la proporción de la pantalla. Lee siempre `game.renderer.width`; nunca escribas 1280. El canvas se escala de forma uniforme (sin deformar) y con bandas si la proporción queda fuera del rango. Se limita la densidad de píxeles (2×) y el total de píxeles del canvas. El cálculo está en `engine/layout.js` (función pura con pruebas). Detalle en [DISPOSITIVOS.md](DISPOSITIVOS.md).
+- **Áreas seguras:** `renderer.safe` / `renderer.safeRect` (unidades lógicas). La interfaz las respeta; el mundo se pinta hasta el borde.
+- **Tamaños de interfaz en píxeles reales:** `renderer.cssToLogical(px)` y `ui/draw.js → legibleSize()` convierten medidas de pantalla real (botones, texto mínimo) a unidades lógicas.
 - La interfaz se dibuja en coordenadas lógicas. El **mundo** se dibuja bajo la transformación de la cámara (`camera.apply(ctx)`); `camera.worldToScreen / screenToWorld` convierten entre ambos.
 
 ## Carpetas y responsabilidades
@@ -37,12 +54,12 @@ rAF → acumula tiempo → N × Game.update(1/60) → Game.render()
 | Carpeta | Responsabilidad | Piezas actuales |
 |---|---|---|
 | `src/config/` | Valores ajustables, sin lógica | `config.js`, `controls.js`, `theme.js`, `assets.js` |
-| `src/engine/` | Motor y lógica general | `Game`, `Loop`, `Renderer`, `Input`, `Camera`, `Scene`, `SceneManager`, `Transition`, `AssetLoader`, `EventBus` |
+| `src/engine/` | Motor y lógica general | `Game`, `Loop`, `Renderer`, `layout` (cálculo puro), `SafeArea`, `Orientation`, `Input`, `Camera`, `Scene`, `SceneManager`, `Transition`, `AssetLoader`, `EventBus` |
 | `src/engine/systems/` | Sistemas de juego reutilizables | `Dialogue` (lógica), `Interaction` |
 | `src/characters/` | Todo lo que vive dentro de un nivel | `Entity` (base), `Player`, `NPC` |
 | `src/levels/` | Cómo se describen y cargan los niveles | `Level`, `LevelManager`, `entityFactory`, `index.js`, `dev/` |
 | `src/scenes/` | Escenas de flujo del juego | `BootScene`, `LevelScene` |
-| `src/ui/` | Dibujo e interacción de la interfaz | `Menu`, `DialogBox`, `TouchControls`, `screens/*` |
+| `src/ui/` | Dibujo e interacción de la interfaz | `Menu`, `DialogBox`, `TouchControls`, `FullscreenButton`, `screens/*` |
 | `src/animation/` | Animación | `Animator`, `Tween`/`TweenManager`, `easing` |
 | `src/audio/` | Sonido | `AudioManager` |
 | `src/save/` | Persistencia | `SaveManager`, `schema` (versionado), `storage` |
@@ -55,6 +72,7 @@ Una escena es una clase que hereda de `Scene` (`enter`, `update`, `render`, `exi
 - `scenes.replace('nombre', params)` — cambia de escena con **fundido**; vacía la pila.
 - `scenes.push('nombre', params)` / `scenes.pop()` — apila/retira (pausa, confirmaciones). Una escena con `get transparent() { return true; }` deja ver lo de debajo.
 - Solo la escena superior recibe `update`.
+- Si cambia la proporción o las áreas seguras, `scenes.resize()` llama a `onResize(w, h)` en **todas** las escenas de la pila. Las escenas simples no necesitan implementarlo: basta con leer `game.renderer` al dibujar y pasar `x`/`width` de los `Menu` como funciones. `LevelScene` lo usa para su cámara y sus controles táctiles.
 - Si el fundido está en la fase de oscurecer, no se actualiza ninguna escena (evita entradas "fantasma").
 
 Flujo actual:

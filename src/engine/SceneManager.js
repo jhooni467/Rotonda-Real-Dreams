@@ -72,6 +72,11 @@ export class SceneManager {
     this.current?.resume();
   }
 
+  /** Avisa a TODAS las escenas de la pila (también a las tapadas por una pausa). */
+  resize(width, height) {
+    for (const scene of this.stack) scene.onResize(width, height);
+  }
+
   update(dt) {
     this.transition.update(dt);
     if (this.transition.blocksInput) return;

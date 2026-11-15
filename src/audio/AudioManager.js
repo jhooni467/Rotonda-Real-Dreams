@@ -37,6 +37,15 @@ export class AudioManager {
     }
   }
 
+  /** Silencia y detiene el reloj de audio (p. ej. mientras el juego está en pausa por orientación). */
+  suspend() {
+    if (this.ctx?.state === 'running') this.ctx.suspend()?.catch?.(() => {});
+  }
+
+  resume() {
+    if (this.unlocked && this.ctx.state === 'suspended') this.ctx.resume()?.catch?.(() => {});
+  }
+
   setVolumes({ masterVolume, musicVolume, sfxVolume }) {
     if (masterVolume !== undefined) this.volumes.master = masterVolume;
     if (musicVolume !== undefined) this.volumes.music = musicVolume;

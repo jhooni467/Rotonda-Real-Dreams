@@ -73,11 +73,32 @@ for (const m of html.matchAll(/(?:src|href)="([^"#]+)"/g)) {
   if (!existsExactDeep(resolve(ROOT, m[1]))) errors.push(`index.html: referencia rota → "${m[1]}"`);
 }
 
+// 3b: manifiesto (orientación horizontal e iconos existentes)
+try {
+  const manifest = JSON.parse(readFileSync(join(ROOT, 'manifest.webmanifest'), 'utf8'));
+  if (manifest.orientation !== 'landscape') errors.push('manifest.webmanifest: "orientation" debe ser "landscape"');
+  for (const field of ['name', 'start_url', 'display', 'icons']) if (!manifest[field]) errors.push(`manifest.webmanifest: falta "${field}"`);
+  for (const icon of manifest.icons ?? []) {
+    if (!existsExactDeep(resolve(ROOT, icon.src))) errors.push(`manifest.webmanifest: icono inexistente → "${icon.src}"`);
+  }
+} catch (e) {
+  errors.push(`manifest.webmanifest ilegible: ${e.message}`);
+}
+
 // 4: estructura obligatoria
 const REQUIRED = [
   'README.md',
   'index.html',
+  'manifest.webmanifest',
   'css/main.css',
+  'src/engine/layout.js',
+  'src/engine/Orientation.js',
+  'src/engine/SafeArea.js',
+  'src/ui/FullscreenButton.js',
+  'src/ui/TouchControls.js',
+  'assets/graphics/provisional/icon-192.png',
+  'assets/graphics/provisional/icon-512.png',
+  'docs/DISPOSITIVOS.md',
   'src/main.js',
   'src/config/config.js',
   'src/engine/Game.js',

@@ -25,6 +25,8 @@ export class Scene {
   exit() {}
   pause() {}
   resume() {}
+  /** Cambió el tamaño lógico (proporción, orientación, áreas seguras). Lee game.renderer. */
+  onResize(_width, _height) {}
   update(_dt) {}
   render(_ctx) {}
 }

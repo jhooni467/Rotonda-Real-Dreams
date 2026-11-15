@@ -84,7 +84,7 @@ Recomendaciones:
 ## 5. Probar antes de subir
 
 ```bash
-npm run verify        # automático: estructura + 13 pruebas
+npm run verify        # automático: estructura + pruebas
 npm start             # abre http://localhost:8080 y pruébalo a mano
 ```
 

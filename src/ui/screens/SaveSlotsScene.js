@@ -3,7 +3,7 @@ import { CONFIG } from '../../config/config.js';
 import { THEME } from '../../config/theme.js';
 import { createEmptySave } from '../../save/schema.js';
 import { Menu } from '../Menu.js';
-import { drawText } from '../draw.js';
+import { drawText, legibleSize } from '../draw.js';
 import { formatDate, formatPlaytime } from '../format.js';
 
 /**
@@ -15,7 +15,6 @@ export class SaveSlotsScene extends Scene {
   enter({ mode = 'new' } = {}) {
     const { game } = this;
     this.mode = mode;
-    const { width: W } = game.renderer;
 
     const items = game.saves.listSlots().map((s) => {
       const n = `Espacio ${s.slot}`;
@@ -35,7 +34,17 @@ export class SaveSlotsScene extends Scene {
     });
     items.push({ label: 'Volver', onSelect: () => this._back() });
 
-    this.menu = new Menu({ audio: game.audio, x: W / 2, y: 190, width: 900, itemHeight: 74, gap: 16, fontSize: 24, items });
+    this.menu = new Menu({
+      audio: game.audio,
+      x: () => game.renderer.width / 2,
+      y: 190,
+      // Hasta 900 de ancho, sin invadir las áreas seguras en pantallas estrechas.
+      width: () => Math.min(900, game.renderer.safeRect.w - 48),
+      itemHeight: 74,
+      gap: 16,
+      fontSize: 24,
+      items,
+    });
   }
 
   _back() {
@@ -74,7 +83,8 @@ export class SaveSlotsScene extends Scene {
   }
 
   render(ctx) {
-    const { width: W, height: H } = this.game.renderer;
+    const { renderer } = this.game;
+    const { width: W, height: H, safe } = renderer;
     ctx.fillStyle = '#16121f';
     ctx.fillRect(0, 0, W, H);
     drawText(ctx, this.mode === 'new' ? 'Nueva partida' : 'Cargar partida', W / 2, 100, {
@@ -84,8 +94,8 @@ export class SaveSlotsScene extends Scene {
       baseline: 'middle',
     });
     if (!this.game.saves.persistent) {
-      drawText(ctx, 'Aviso: el navegador bloquea el almacenamiento; el progreso no se conservará al cerrar.', W / 2, H - 30, {
-        font: `16px ${THEME.fonts.ui}`,
+      drawText(ctx, 'Aviso: el navegador bloquea el almacenamiento; el progreso no se conservará al cerrar.', W / 2, H - safe.bottom - 20, {
+        font: `${legibleSize(renderer, 16)}px ${THEME.fonts.ui}`,
         color: THEME.colors.accent,
         align: 'center',
         baseline: 'bottom',

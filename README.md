@@ -4,7 +4,7 @@
 
 **ROTONDA** es una aventura 2D de exploración, acertijos y surrealismo. Se juega en el navegador, en PC y en Android.
 
-**Estado del proyecto:** Etapa 00 · estructura base. Todavía no hay historia, niveles ni arte definitivos: este repositorio contiene los cimientos técnicos sobre los que se construirá el juego.
+**Estado del proyecto:** Etapa 01 · adaptabilidad multidispositivo (sobre la estructura base de la Etapa 00). Todavía no hay historia, niveles ni arte definitivos: este repositorio contiene los cimientos técnicos sobre los que se construirá el juego.
 
 ---
 
@@ -81,7 +81,12 @@ Abre <http://localhost:8080>.
 | Pausa | `Esc` · `P` | Botón **II** |
 | Zoom | `+` / `−` o rueda del ratón | Botones **+** / **−** |
 | Menús | Flechas + `Enter` | Tocar la opción |
-| Depuración (FPS, escenas) | `F3` | — |
+| Pantalla completa | `F` | Botón de la esquina superior izquierda |
+| Depuración (FPS, tamaño, áreas seguras) | `F3` | — |
+
+### 📱 Teléfonos y tablets
+
+ROTONDA se juega **solo en horizontal**. Con el dispositivo en vertical aparece una pantalla de "Gira tu dispositivo" y el juego queda en pausa hasta que lo giras. La imagen se adapta a cualquier proporción (de 4:3 a 21:9) sin deformarse, respeta las áreas seguras (notch, esquinas, barra de gestos) y los controles táctiles se ajustan al tamaño de la pantalla. El bloqueo de orientación del navegador se intenta cuando es posible, pero **no está garantizado** (por ejemplo, no existe en Safari/iPhone). Todos los detalles y limitaciones: [docs/DISPOSITIVOS.md](docs/DISPOSITIVOS.md).
 
 ### Qué puedes probar en esta etapa
 
@@ -94,8 +99,8 @@ Menú principal → **Nueva partida** (3 espacios de guardado) → una **sala de
 Solo necesitas Node.js 18+ (no hay nada que instalar):
 
 ```bash
-npm run check    # sintaxis, rutas de imports y archivos obligatorios
-npm test         # 13 pruebas automáticas (cámara, diálogos, guardado, colisiones, flujo completo…)
+npm run check    # sintaxis, rutas de imports, manifiesto y archivos obligatorios
+npm test         # pruebas automáticas (cámara, diálogos, guardado, colisiones, proporciones de pantalla, giro, táctil, flujo completo…)
 npm run verify   # las dos anteriores
 ```
 
@@ -105,12 +110,13 @@ npm run verify   # las dos anteriores
 
 ```
 rotonda/
-├── index.html                 Página que aloja el canvas
-├── css/main.css               Estilos de la página contenedora
+├── index.html                 Página que aloja el canvas y la pantalla de giro
+├── manifest.webmanifest       Manifiesto de app instalable (orientación horizontal)
+├── css/main.css               Estilos de la página contenedora y de la pantalla de giro
 ├── src/
 │   ├── main.js                Punto de entrada
 │   ├── config/                Configuración general (valores, controles, tema, manifiesto de recursos)
-│   ├── engine/                Motor y lógica: bucle, render, entrada, cámara, escenas, transiciones
+│   ├── engine/                Motor y lógica: bucle, render y layout, entrada, cámara, escenas, orientación
 │   │   └── systems/           Sistemas de juego: interacción y diálogos
 │   ├── characters/            Personajes y entidades (Entity, Player, NPC)
 │   ├── levels/                Gestión de niveles y definiciones de cada nivel
@@ -132,6 +138,7 @@ rotonda/
 ## 📚 Documentación técnica
 
 - [**Arquitectura**](docs/ARQUITECTURA.md): cómo encajan las piezas y cómo añadir niveles, personajes, animaciones y sonidos.
+- [**Dispositivos y orientación**](docs/DISPOSITIVOS.md): adaptación a pantallas, áreas seguras, orientación y sus limitaciones en los navegadores.
 - [**Decisiones técnicas**](docs/DECISIONES.md): qué se decidió, por qué, y qué queda pendiente.
 - [**GitHub**](docs/GITHUB.md): crear el repositorio, subir cambios, publicar y seguir trabajando.
 

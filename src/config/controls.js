@@ -19,5 +19,6 @@ export const KEY_BINDINGS = Object.freeze({
   zoomIn: ['Equal', 'NumpadAdd'],
   zoomOut: ['Minus', 'NumpadSubtract'],
 
+  fullscreen: ['KeyF'],
   debug: ['F3'],
 });

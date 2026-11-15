@@ -2,7 +2,7 @@ import { Scene } from '../../engine/Scene.js';
 import { CONFIG } from '../../config/config.js';
 import { THEME } from '../../config/theme.js';
 import { Menu } from '../Menu.js';
-import { drawText } from '../draw.js';
+import { drawText, legibleSize } from '../draw.js';
 
 /**
  * Menú principal: Continuar · Nueva partida · Cargar partida.
@@ -12,13 +12,14 @@ export class MainMenuScene extends Scene {
   enter() {
     const { game } = this;
     const latest = game.saves.latestSlot();
-    const { width: W } = game.renderer;
 
     this.menu = new Menu({
       audio: game.audio,
-      x: W / 2,
-      y: 360,
+      x: () => game.renderer.width / 2, // sigue centrado si cambia la proporción de la pantalla
+      y: 350,
       width: 440,
+      itemHeight: 64,
+      gap: 16,
       items: [
         {
           label: 'Continuar',
@@ -43,7 +44,8 @@ export class MainMenuScene extends Scene {
   }
 
   render(ctx) {
-    const { width: W, height: H } = this.game.renderer;
+    const { renderer } = this.game;
+    const { width: W, height: H, safe } = renderer;
 
     const g = ctx.createLinearGradient(0, 0, 0, H);
     g.addColorStop(0, '#1b1626');
@@ -67,13 +69,15 @@ export class MainMenuScene extends Scene {
 
     this.menu.render(ctx);
 
-    drawText(ctx, `v${CONFIG.game.version} · ${CONFIG.game.stage}`, 20, H - 20, {
-      font: `14px ${THEME.fonts.ui}`,
+    const small = `${legibleSize(renderer, 14)}px ${THEME.fonts.ui}`;
+    const footY = H - safe.bottom - 20;
+    drawText(ctx, `v${CONFIG.game.version} · ${CONFIG.game.stage}`, safe.left + 20, footY, {
+      font: small,
       color: THEME.colors.disabled,
       baseline: 'bottom',
     });
-    drawText(ctx, 'Este juego aborda temas emocionales sensibles. Consulta el README.', W - 20, H - 20, {
-      font: `14px ${THEME.fonts.ui}`,
+    drawText(ctx, 'Este juego aborda temas emocionales sensibles. Consulta el README.', W - safe.right - 20, footY - legibleSize(renderer, 14) - 6, {
+      font: small,
       color: THEME.colors.disabled,
       align: 'right',
       baseline: 'bottom',

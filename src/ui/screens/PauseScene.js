@@ -14,16 +14,17 @@ export class PauseScene extends Scene {
 
   enter({ levelScene }) {
     const { game } = this;
-    const { width: W } = game.renderer;
     this.levelScene = levelScene;
     this.message = '';
     this.messageTime = 0;
 
     this.menu = new Menu({
       audio: game.audio,
-      x: W / 2,
+      x: () => game.renderer.width / 2,
       y: 270,
       width: 440,
+      itemHeight: 64,
+      gap: 16,
       items: [
         { label: 'Continuar', onSelect: () => game.scenes.pop() },
         { label: 'Guardar partida', onSelect: () => this._save() },

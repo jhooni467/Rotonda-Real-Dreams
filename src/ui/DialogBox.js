@@ -5,15 +5,17 @@ import { roundRectPath, wrapText } from './draw.js';
  * Dibuja la caja de diálogo para un sistema Dialogue (engine/systems/Dialogue.js).
  * Solo dibujo: la lógica de líneas y avance está en Dialogue.
  */
-export function drawDialogBox(ctx, dialogue, W, H) {
+export function drawDialogBox(ctx, dialogue, W, H, safe = { top: 0, right: 0, bottom: 0, left: 0 }) {
   const line = dialogue.line;
   if (!line) return;
 
-  const margin = 60;
+  // La caja respeta las áreas seguras (notch, barra de gestos) y se reparte a lo ancho de la pantalla.
+  const marginL = Math.max(60, safe.left + 24);
+  const marginR = Math.max(60, safe.right + 24);
   const boxH = 176;
-  const x = margin;
-  const w = W - margin * 2;
-  const y = H - boxH - 36;
+  const x = marginL;
+  const w = W - marginL - marginR;
+  const y = H - boxH - Math.max(36, safe.bottom + 16);
   const pad = 28;
   const fontSize = 26;
   const font = `${fontSize}px ${THEME.fonts.ui}`;
